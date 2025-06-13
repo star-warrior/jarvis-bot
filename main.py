@@ -1,7 +1,30 @@
+import os
 import speech_recognition as sr
 import webbrowser
 import pyttsx3
 import musicLibrary
+import requests
+import time
+from google import genai
+from google.genai import types
+
+from dotenv import load_dotenv
+load_dotenv()
+
+#! Custom Module Imports
+
+from geminiImage import generateImage
+
+#? About the chatbot
+
+name = "Jarvis"
+role = "Personal Assistant Chatbot"
+owner= "Jay"
+
+#? Loading Apis
+
+news_api_key = os.getenv("NEWS_API")
+client = genai.Client(api_key=os.getenv("GEMINI_API"))
 
 recogniser = sr.Recognizer()
 ttsx = pyttsx3.init()
@@ -9,8 +32,9 @@ ttsx = pyttsx3.init()
 def speak(meassage):
     ttsx.say(meassage)
     ttsx.runAndWait()
-    
-    
+      
+      
+      
 #! Commands are processed from here
     
 def proccessCommand(c):
@@ -36,6 +60,43 @@ def proccessCommand(c):
         print(song)
         speak(f"Playing {song}")
         webbrowser.open(musicLibrary.music[song])
+        
+    #? Get some news
+    
+    elif "news" in c.lower():
+        speak("Getting some news for you right now!")
+        r = requests.get(f"https://newsapi.org/v2/top-headlines?apiKey={news_api_key}&pageSize=5&page=1&category=general")
+        
+        if r.status_code == 200:
+            response = r.json()
+            
+            for article in response['articles']:
+                speak(article['title'])
+                time.sleep(2)
+                
+    #? Generate Image using Gemini
+    
+    elif "generate image" in c.lower():
+        speak("How you want your image to be?")
+        
+        try:
+            with sr.Microphone() as source:
+                audio = recogniser.listen(source)
+                command =recogniser.recognize_google(audio)
+                generateImage(command)
+                speak(f"Generating image of {command}")
+        except Exception as e:
+            print("Error: {0} ".format(e))
+            
+          
+    #? Use gemini to handle other tasks      
+    else: 
+        print("Working with gemini")
+        response = client.models.generate_content(config=types.GenerateContentConfig(
+        system_instruction=f"You are {owner}'s {role}. Your name is {name}."),
+        model="gemini-2.0-flash", contents=c
+        )
+        speak(response.text)
         
     
     
@@ -70,7 +131,7 @@ if __name__ == "__main__":
                         command =recogniser.recognize_google(audio)
                         proccessCommand(command)
                 except Exception as e:
-                    print("Error: {0} ".format(0))
+                    print("Error: {0} ".format(e))
                 
             else:
                 print("No jarvis")
