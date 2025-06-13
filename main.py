@@ -93,7 +93,7 @@ def proccessCommand(c):
     else: 
         print("Working with gemini")
         response = client.models.generate_content(config=types.GenerateContentConfig(
-        system_instruction=f"You are {owner}'s {role}. Your name is {name}."),
+        system_instruction=f"You are {owner}'s {role}. Your name is {name}. Give short responses"),
         model="gemini-2.0-flash", contents=c
         )
         speak(response.text)
